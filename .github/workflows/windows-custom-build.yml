@@ -46,8 +46,25 @@ jobs:
           Copy-Item examples/*.* package/examples/ -ErrorAction SilentlyContinue
           & "${Env:Qt5_Dir}/bin/windeployqt.exe" --release --compiler-runtime package/SavvyCAN.exe
 
+      - name: Create release ZIP
+        shell: pwsh
+        run: Compress-Archive -Path package/* -DestinationPath SavvyCAN-Windows-x64-custom.zip -Force
+
       - name: Upload Windows x64 package
         uses: actions/upload-artifact@v4
         with:
           name: SavvyCAN-Windows_x64-text-output
           path: package
+
+      - name: Publish custom development release
+        if: github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: custom-windows-latest
+          name: SavvyCAN Custom Windows Build
+          prerelease: true
+          make_latest: false
+          files: SavvyCAN-Windows-x64-custom.zip
+          body: |
+            Custom Windows x64 build from ref: ${{ inputs.ref }}
+            Includes SavvyCAN scripting text-file output API and custom CAN bitrate options.
