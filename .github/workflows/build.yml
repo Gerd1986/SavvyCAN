@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "master"
+      - "script-text-file-output"
 jobs:
   buildlinux:
     name: Linux x64
