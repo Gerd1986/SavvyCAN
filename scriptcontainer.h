@@ -92,6 +92,8 @@ public slots:
     void compileScript();
     void setTickInterval(QJSValue interval);
     void log(QJSValue logString);
+    void writeTextFile(QJSValue fileName, QJSValue text);
+    void appendTextFile(QJSValue fileName, QJSValue text);
     void addParameter(QJSValue name);
     void updateValuesTable(QTableWidget *widget);
     void updateParameter(QString name, QString value);
