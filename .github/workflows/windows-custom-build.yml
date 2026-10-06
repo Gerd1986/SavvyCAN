@@ -1,0 +1,53 @@
+name: Windows Custom Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag or commit to build"
+        required: true
+        default: "script-text-file-output"
+  push:
+    branches:
+      - "script-text-file-output"
+
+jobs:
+  buildwindows:
+    name: Windows x64
+    runs-on: windows-2022
+
+    steps:
+      - name: Prepare Qt Libraries
+        uses: jurplel/install-qt-action@v3
+
+      - name: Checkout requested ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref }}
+
+      - name: Compile
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          qmake CONFIG+=release SavvyCAN.pro
+          nmake /C
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force package | Out-Null
+          Copy-Item "release/SavvyCAN.exe" package/
+          New-Item -ItemType Directory -Force package/translations | Out-Null
+          Copy-Item translations/*.qm package/translations/ -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force package/help/images | Out-Null
+          Copy-Item help/*.md package/help/ -ErrorAction SilentlyContinue
+          Copy-Item help/images/*.* package/help/images/ -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force package/examples | Out-Null
+          Copy-Item examples/*.* package/examples/ -ErrorAction SilentlyContinue
+          & "${Env:Qt5_Dir}/bin/windeployqt.exe" --release --compiler-runtime package/SavvyCAN.exe
+
+      - name: Upload Windows x64 package
+        uses: actions/upload-artifact@v4
+        with:
+          name: SavvyCAN-Windows_x64-text-output
+          path: package
