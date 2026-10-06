@@ -1,5 +1,9 @@
 #include <QJSValueIterator>
 #include <QDebug>
+#include <QFile>
+#include <QFileInfo>
+#include <QTextStream>
+#include <QDir>
 
 #include "scriptcontainer.h"
 #include "connections/canconmanager.h"
@@ -110,6 +114,51 @@ void ScriptContainer::log(QJSValue logString)
 {
     QString val = logString.toString();
     emit sendLog(val);
+}
+
+
+static QString resolveScriptOutputPath(const QString &requestedPath, const QString &scriptFilePath)
+{
+    QFileInfo requestedInfo(requestedPath);
+    if (requestedInfo.isAbsolute()) return requestedInfo.absoluteFilePath();
+
+    QFileInfo scriptInfo(scriptFilePath);
+    if (!scriptFilePath.isEmpty() && !scriptInfo.absolutePath().isEmpty())
+        return QDir(scriptInfo.absolutePath()).filePath(requestedPath);
+
+    return QDir::current().filePath(requestedPath);
+}
+
+void ScriptContainer::writeTextFile(QJSValue fileNameValue, QJSValue textValue)
+{
+    QString outputPath = resolveScriptOutputPath(fileNameValue.toString(), filePath);
+    QFile file(outputPath);
+
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
+    {
+        emit sendLog("Unable to write text file: " + outputPath + " (" + file.errorString() + ")");
+        return;
+    }
+
+    QTextStream stream(&file);
+    stream << textValue.toString();
+    file.close();
+}
+
+void ScriptContainer::appendTextFile(QJSValue fileNameValue, QJSValue textValue)
+{
+    QString outputPath = resolveScriptOutputPath(fileNameValue.toString(), filePath);
+    QFile file(outputPath);
+
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append))
+    {
+        emit sendLog("Unable to append text file: " + outputPath + " (" + file.errorString() + ")");
+        return;
+    }
+
+    QTextStream stream(&file);
+    stream << textValue.toString();
+    file.close();
 }
 
 void ScriptContainer::setTickInterval(QJSValue interval)
