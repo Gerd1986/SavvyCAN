@@ -167,7 +167,8 @@ void SerialBusConnection::framesWritten(qint64 count)
 
 void SerialBusConnection::framesReceived()
 {
-    uint64_t timeBasis = CANConManager::getInstance()->getTimeBasis();
+    auto* manager = CANConManager::getInstance();
+    const qint64 timeBasis = manager->getTimeBasis();
 
     /* sanity checks */
     if(!mDev_p)
@@ -204,7 +205,6 @@ void SerialBusConnection::framesReceived()
                     frame_p->setExtendedFrameFormat(recFrame.hasExtendedFrameFormat());
                     frame_p->setFrameId(recFrame.frameId());
                 }
-                frame_p->setTimeStamp(recFrame.timeStamp());
                 frame_p->setFrameType(recFrame.frameType());
                 frame_p->setError(recFrame.error());
                 /* If recorded frame has a local echo, it is a Tx message, and thus should not be marked as Rx */
@@ -213,7 +213,15 @@ void SerialBusConnection::framesReceived()
                 if (useSystemTime) {
                     frame_p->setTimeStamp(QCanBusFrame::TimeStamp::fromMicroSeconds(QDateTime::currentMSecsSinceEpoch() * 1000ul));
                 }
-                else frame_p->setTimeStamp(QCanBusFrame::TimeStamp(0, (recFrame.timeStamp().seconds() * 1000000ul + recFrame.timeStamp().microSeconds()) - timeBasis));
+                else
+                {
+                    const auto stamp = recFrame.timeStamp();
+                    const qint64 driverUs = stamp.seconds() * 1000000LL + stamp.microSeconds();
+                    // Device-relative clocks (e.g. Vector) cannot be offset by a Unix timestamp.
+                    const qint64 relativeUs = driverUs >= timeBasis
+                        ? driverUs - timeBasis : manager->elapsedMicroseconds();
+                    frame_p->setTimeStamp(QCanBusFrame::TimeStamp(0, relativeUs));
+                }
 
                 checkTargettedFrame(*frame_p);
 

@@ -131,6 +131,11 @@ uint64_t CANConManager::getTimeBasis()
     return mTimestampBasis;
 }
 
+qint64 CANConManager::elapsedMicroseconds() const
+{
+    return mElapsedTimer.nsecsElapsed() / 1000;
+}
+
 QList<CANConnection*>& CANConManager::getConnections()
 {
     return mConns;
@@ -226,7 +231,7 @@ bool CANConManager::sendFrame(const CANFrame& pFrame)
             }
             else
             {
-                workingFrame.setTimeStamp(QCanBusFrame::TimeStamp(0, mElapsedTimer.nsecsElapsed() / 1000));
+                workingFrame.setTimeStamp(QCanBusFrame::TimeStamp(0, elapsedMicroseconds()));
                 //workingFrame.timestamp -= mTimestampBasis;
             }
 

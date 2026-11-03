@@ -426,7 +426,7 @@ void MainWindow::readUpdateableSettings()
 
     bool tempBool;
     TimeStyle ts = TS_MICROS;
-    tempBool = settings.value("Main/TimeSeconds", false).toBool();
+    tempBool = settings.value("Main/TimeSeconds", true).toBool();
     if (tempBool) ts = TS_SECONDS;
     tempBool = settings.value("Main/TimeClock", false).toBool();
     if (tempBool) ts = TS_CLOCK;

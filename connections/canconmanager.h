@@ -24,6 +24,7 @@ public:
     CANConnection* getByName(const QString& pName) const;
 
     uint64_t getTimeBasis();
+    qint64 elapsedMicroseconds() const;
     void resetTimeBasis();
 
     int getNumBuses();
